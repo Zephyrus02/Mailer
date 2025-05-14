@@ -4,7 +4,8 @@ const multer = require('multer');
 const nodemailer = require('nodemailer');
 const path = require('path');
 const fs = require('fs');
-const http = require('http'); // Add http module for internal requests
+const http = require('http');
+const cors = require('cors'); // Add CORS package
 
 const app = express();
 const PORT = 3000;
@@ -12,6 +13,12 @@ const PORT = 3000;
 // Set up multer for file uploads
 const upload = multer({ storage: multer.memoryStorage() });
 
+// Enable CORS for specific origin
+app.use(cors({
+  origin: 'https://aneeshraskar.is-a.dev', // Replace with your frontend URL
+  methods: ['GET', 'POST'],
+  credentials: true
+}));
 app.use(express.json());
 
 // Email transporter setup
