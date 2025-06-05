@@ -1,11 +1,11 @@
-require('dotenv').config();
-const express = require('express');
-const multer = require('multer');
-const nodemailer = require('nodemailer');
-const path = require('path');
-const fs = require('fs');
-const http = require('http');
-const cors = require('cors'); // Add CORS package
+require("dotenv").config();
+const express = require("express");
+const multer = require("multer");
+const nodemailer = require("nodemailer");
+const path = require("path");
+const fs = require("fs");
+const http = require("http");
+const cors = require("cors"); // Add CORS package
 
 const app = express();
 const PORT = 3000;
@@ -14,11 +14,28 @@ const PORT = 3000;
 const upload = multer({ storage: multer.memoryStorage() });
 
 // Enable CORS for specific origin
-app.use(cors({
-  origin: 'https://aneeshraskar.is-a.dev', // Replace with your frontend URL
-  methods: ['GET', 'POST'],
-  credentials: true
-}));
+app.use(
+  cors({
+    origin: function (origin, callback) {
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      if (!origin) return callback(null, true);
+
+      const allowedOrigins = [
+        "https://aneeshraskar.is-a.dev",
+        "http://localhost:3000",
+        "http://localhost:3001",
+      ];
+
+      if (allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
+    methods: ["GET", "POST"],
+    credentials: true,
+  })
+);
 app.use(express.json());
 
 // Email transporter setup
@@ -33,18 +50,18 @@ const transporter = nodemailer.createTransport({
 });
 
 // Health check route
-app.get('/health', (req, res) => {
+app.get("/health", (req, res) => {
   res.status(200).json({
-    status: 'ok',
+    status: "ok",
     timestamp: new Date(),
-    service: 'mailer',
+    service: "mailer",
   });
 });
 
 // API endpoint to receive form data and attachments
-app.post('/send-mail', upload.array('attachments'), async (req, res) => {
+app.post("/send-mail", upload.array("attachments"), async (req, res) => {
   const { name, email, message } = req.body;
-  const attachments = req.files.map(file => ({
+  const attachments = req.files.map((file) => ({
     filename: file.originalname,
     content: file.buffer,
     contentType: file.mimetype,
@@ -59,50 +76,57 @@ app.post('/send-mail', upload.array('attachments'), async (req, res) => {
       attachments,
     });
 
-    res.json({ success: true, message: 'Email sent successfully!' });
+    res.json({ success: true, message: "Email sent successfully!" });
   } catch (err) {
     console.error(err);
-    res.status(500).json({ success: false, message: 'Email failed to send.' });
+    res.status(500).json({ success: false, message: "Email failed to send." });
   }
 });
 
 // Function to periodically call health check
 const scheduleHealthCheck = () => {
   const healthCheckInterval = 10 * 60 * 1000; // 10 minutes in milliseconds
-  
+
   setInterval(() => {
     const options = {
-      hostname: 'localhost',
+      hostname: "localhost",
       port: PORT,
-      path: '/health',
-      method: 'GET'
+      path: "/health",
+      method: "GET",
     };
 
     const req = http.request(options, (res) => {
-      let data = '';
-      
-      res.on('data', (chunk) => {
+      let data = "";
+
+      res.on("data", (chunk) => {
         data += chunk;
       });
-      
-      res.on('end', () => {
-        console.log(`Health check at ${new Date().toISOString()} - Status: ${res.statusCode}`);
+
+      res.on("end", () => {
+        console.log(
+          `Health check at ${new Date().toISOString()} - Status: ${
+            res.statusCode
+          }`
+        );
         if (res.statusCode === 200) {
-          console.log('Service is healthy');
+          console.log("Service is healthy");
         } else {
-          console.error('Service health check failed with status:', res.statusCode);
+          console.error(
+            "Service health check failed with status:",
+            res.statusCode
+          );
         }
       });
     });
-    
-    req.on('error', (error) => {
-      console.error('Health check failed:', error.message);
+
+    req.on("error", (error) => {
+      console.error("Health check failed:", error.message);
     });
-    
+
     req.end();
   }, healthCheckInterval);
-  
-  console.log('Health check monitoring started - running every 10 minutes');
+
+  console.log("Health check monitoring started - running every 10 minutes");
 };
 
 app.listen(PORT, () => {
