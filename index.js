@@ -24,6 +24,7 @@ app.use(
         "https://aneeshraskar.is-a.dev",
         "http://localhost:3000",
         "http://localhost:3001",
+        "http://localhost:5173"
       ];
 
       if (allowedOrigins.includes(origin)) {
